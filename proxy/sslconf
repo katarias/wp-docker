@@ -1,0 +1,11 @@
+server {
+    listen 80;
+    server_name wp-store.com www.wp-store.com;
+
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+    location / {
+	proxy_pass http://wp-store_nginx:80;
+    }
+}

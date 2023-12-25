@@ -1,0 +1,50 @@
+version: "3.7"
+services:
+  wp-store_nginx:
+    image: nginx:latest
+    container_name: wp-store_nginx
+    restart: always
+    volumes:
+      - ./nginx/:/etc/nginx/conf.d/
+      - ${DOMAIN_WEBROOT}/web:/var/www/html
+    expose:
+      - 80
+    depends_on:
+      - wp-store_mysql
+      - wp-store_php
+    networks:
+      - wp-store_network
+  
+  wp-store_php:
+    build:
+      context: ./php
+      dockerfile: Dockerfile
+    container_name: wp-store_php
+    restart: always
+    expose:
+      - 9000
+    volumes:
+      - ./php/php.ini:/usr/local/etc/php/conf.d/php.ini
+      - ${DOMAIN_WEBROOT}/web:/var/www/html
+    networks:
+      - wp-store_network
+
+  wp-store_mysql:
+    image: mariadb:10.4
+    container_name: wp-store_mysql
+    restart: always
+    environment: 
+      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD}"
+      MYSQL_DATABASE: "${MYSQL_DATABASE}"
+      MYSQL_USER: "${MYSQL_USER}"
+      MYSQL_PASSWORD: "${MYSQL_PASSWORD}"
+    volumes: 
+      - ${DOMAIN_WEBROOT}/mysql:/var/lib/mysql
+      - ${DOMAIN_WEBROOT}/web:/var/www/html
+    networks: 
+      - wp-store_network
+
+networks: 
+  wp-store_network:
+    external:
+      name: proxy_network

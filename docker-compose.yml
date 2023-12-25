@@ -1,0 +1,31 @@
+version: "3.7"
+services:
+  proxy_nginx:
+    image: nginx:latest
+    container_name: proxy_nginx
+    restart: always
+    volumes:
+      - ./proxy/:/etc/nginx/conf.d/
+      - /etc/letsencrypt:/etc/letsencrypt
+      - /etc/ssl/certs/certbot/www:/var/www/certbot
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - proxy_certbot
+    networks:
+      - proxy_network
+
+  proxy_certbot:
+    image: certbot/certbot
+    container_name: proxy_certbot
+    volumes:
+      - /etc/letsencrypt:/etc/letsencrypt
+      - /etc/ssl/certs/certbot/www:/var/www/certbot
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+    networks:
+      - proxy_network
+
+networks: 
+  proxy_network:
+    name: proxy_network

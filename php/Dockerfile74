@@ -44,7 +44,6 @@ RUN chmod +x /usr/local/bin/wp
 WORKDIR /var/www/html
 ENV PHP_MEMORY_LIMIT 2G
 ENV PHP_ENABLE_XDEBUG false
-ENV MAGENTO_ROOT /var/www/html
 
 ENV DEBUG false
 ENV UPDATE_UID_GID false

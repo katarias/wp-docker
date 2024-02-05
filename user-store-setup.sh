@@ -7,6 +7,9 @@ function HELP {
         echo "--userdomain: domain Url"
 	echo "--phpversion: php version"
 	echo "--wpversion: php version"
+	echo "--wpuser: WP Admin User"
+	echo "--wppass: WP Admin Password"
+	echo "--wpemail: WP Admin Email"
 }
 
 args=("$@")
@@ -28,6 +31,18 @@ do
                 ;;
                 --wpversion)
                 wpversion="${args[$((idx+1))]}"
+                idx=$((idx+2))
+                ;;
+                --wpuser)
+                wpuser="${args[$((idx+1))]}"
+                idx=$((idx+2))
+                ;;
+                --wppass)
+                wppass="${args[$((idx+1))]}"
+                idx=$((idx+2))
+                ;;
+                --wpemail)
+                wpemail="${args[$((idx+1))]}"
                 idx=$((idx+2))
                 ;;
                 -h|--help)
@@ -56,6 +71,12 @@ then
                 echo "Please pass php version number either 74/80/81/82"
                 exit
         fi
+        
+	if [ -z $wpuser ] || [ -z $wppass ] || [ -z $wpemail ]
+        then
+                echo "wpuser , wppass or wpemail should not be empty"
+		exit
+	fi
 
 	if [ -z $wpversion ]            # Set wpversion to latest if it's empty
         then
@@ -71,7 +92,6 @@ then
 	MYSQL_DATABASE=$(echo $userdomain|tr '.' '_')
 	MYSQL_USER=$(echo $userdomain|tr '.' '_')
 	MYSQL_PASSWORD=$(openssl rand -base64 10 | tr -dc 'a-zA-Z0-9')
-	wppass=$MYSQL_PASSWORD
 
 	echo "MYSQL_DATABASE=$MYSQL_DATABASE
 	      MYSQL_USER=$MYSQL_USER
@@ -91,6 +111,7 @@ then
 	docker-compose -f docker-wpsetup.yml up -d
 
 ##### Install and configure Wordpress #####
+	sleep 5
         echo "Wp Core download"
         docker exec -i ${User}_php wp --allow-root core download --version=$wpversion
 
@@ -98,8 +119,10 @@ then
         docker exec -i --workdir /var/www/html ${User}_php wp --allow-root config create --dbname=$MYSQL_DATABASE --dbuser=$MYSQL_USER --dbpass=$MYSQL_PASSWORD --dbhost=${User}_mysql
 
         echo "WP Core install"
-        docker exec -i --workdir /var/www/html ${User}_php wp --allow-root core install --url=$userdomain --title="WP-CLI" --admin_user=admin --admin_password=$wppass --admin_email=admin@$userdomain
+        docker exec -i --workdir /var/www/html ${User}_php wp --allow-root core install --url=https://$userdomain --title="WP-CLI" --admin_user=$wpuser --admin_password=$wppass --admin_email=$wpemail
 
+	sed -i "2i \$_SERVER['HTTPS'] = 'on';" /opt/$userdomain/web/wp-config.php
+	
         echo "Setup proper permission to subdomain folders"
         docker exec -i ${User}_nginx chown -R www-data:www-data /var/www/html
         docker exec -i ${User}_nginx chmod -R g+ws /var/www/html
@@ -110,6 +133,7 @@ then
 	cd $SCRIPTDIR
 	cp proxy/sslconf proxy/$userdomain.conf
 	sed -i "s/wp-store.com/$userdomain/g" proxy/$userdomain.conf
+	sed -i "s/wp-store/$User/g" proxy/$userdomain.conf
 
 	docker-compose restart
 	docker-compose run --rm --entrypoint "certbot certonly --non-interactive --webroot -w /var/www/certbot/ --email admin@$userdomain -d $userdomain --rsa-key-size 4096 --agree-tos --force-renewal" proxy_certbot
@@ -126,9 +150,9 @@ then
         cd $PROJECT_DIR/$userdomain
         docker-compose -f docker-wpsetup.yml down
         echo "Removing nginx conf and website Code"
-        rm -rf $PROJECT_DIR/$userdomain /etc/letsencrypt/live/$userdomain proxy/$userdomain.conf /etc/letsencrypt/renewal/$userdomain.conf /etc/letsencrypt/archive/$userdomain
 
 	cd $SCRIPTDIR
+        rm -rf $PROJECT_DIR/$userdomain /etc/letsencrypt/live/$userdomain proxy/$userdomain.conf /etc/letsencrypt/renewal/$userdomain.conf /etc/letsencrypt/archive/$userdomain
         docker-compose down
         docker-compose up -d
 fi

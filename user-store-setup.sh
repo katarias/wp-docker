@@ -64,14 +64,6 @@ fi
 
 if [ "$function" = "storesetup" ]
 then
-        IP=`dig +short $userdomain|head -n 1`
-        ServerIP=$(curl ifconfig.me)
-        if [ "$IP" != "$ServerIP" ]
-        then
-                echo "$domain should point to server Ip $ServerIP"
-                exit
-        fi
-
 	User=$(echo $userdomain|tr '.' '_')
 	
         if [ $phpversion != "74" ] && [ $phpversion != "80" ] && [ $phpversion != "81" ] && [ $phpversion !="82" ]

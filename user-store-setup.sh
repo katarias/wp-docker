@@ -64,6 +64,14 @@ fi
 
 if [ "$function" = "storesetup" ]
 then
+        IP=`dig +short $userdomain|head -n 1`
+        ServerIP=$(curl ifconfig.me)
+        if [ "$IP" != "$ServerIP" ]
+        then
+                echo "$domain should point to server Ip $ServerIP"
+                exit
+        fi
+
 	User=$(echo $userdomain|tr '.' '_')
 	
         if [ $phpversion != "74" ] && [ $phpversion != "80" ] && [ $phpversion != "81" ] && [ $phpversion !="82" ]
@@ -121,7 +129,7 @@ then
         echo "WP Core install"
         docker exec -i --workdir /var/www/html ${User}_php wp --allow-root core install --url=https://$userdomain --title="WP-CLI" --admin_user=$wpuser --admin_password=$wppass --admin_email=$wpemail
 
-	sed -i "2i \$_SERVER['HTTPS'] = 'on';" /opt/$userdomain/web/wp-config.php
+	sed -i "2i \$_SERVER['HTTPS'] = 'on';" $PROJECT_DIR/$userdomain/web/wp-config.php
 	
         echo "Setup proper permission to subdomain folders"
         docker exec -i ${User}_nginx chown -R www-data:www-data /var/www/html
@@ -131,16 +139,16 @@ then
 	
 ### Add new domain and assign free ssl ######
 	cd $SCRIPTDIR
-	cp proxy/sslconf proxy/$userdomain.conf
-	sed -i "s/wp-store.com/$userdomain/g" proxy/$userdomain.conf
-	sed -i "s/wp-store/$User/g" proxy/$userdomain.conf
+	cp proxy/sslconf $PROJECT_DIR/proxy/$userdomain.conf
+	sed -i "s/wp-store.com/$userdomain/g" $PROJECT_DIR/proxy/$userdomain.conf
+	sed -i "s/wp-store/$User/g" $PROJECT_DIR/proxy/$userdomain.conf
 
 	docker-compose restart
 	docker-compose run --rm --entrypoint "certbot certonly --non-interactive --webroot -w /var/www/certbot/ --email admin@$userdomain -d $userdomain --rsa-key-size 4096 --agree-tos --force-renewal" proxy_certbot
 
-	cp proxy/nginxconf proxy/$userdomain.conf
-	sed -i "s/wp-store.com/$userdomain/g" proxy/$userdomain.conf
-	sed -i "s/wp-store/$User/g" proxy/$userdomain.conf
+	cp proxy/nginxconf $PROJECT_DIR/proxy/$userdomain.conf
+	sed -i "s/wp-store.com/$userdomain/g" $PROJECT_DIR/proxy/$userdomain.conf
+	sed -i "s/wp-store/$User/g" $PROJECT_DIR/proxy/$userdomain.conf
 
 	docker-compose restart
 fi
@@ -152,7 +160,7 @@ then
         echo "Removing nginx conf and website Code"
 
 	cd $SCRIPTDIR
-        rm -rf $PROJECT_DIR/$userdomain /etc/letsencrypt/live/$userdomain proxy/$userdomain.conf /etc/letsencrypt/renewal/$userdomain.conf /etc/letsencrypt/archive/$userdomain
+        rm -rf $PROJECT_DIR/$userdomain /etc/letsencrypt/live/$userdomain $PROJECT_DIR/proxy/$userdomain.conf /etc/letsencrypt/renewal/$userdomain.conf /etc/letsencrypt/archive/$userdomain
         docker-compose down
         docker-compose up -d
 fi

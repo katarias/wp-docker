@@ -5,7 +5,7 @@ services:
     container_name: proxy_nginx
     restart: always
     volumes:
-      - ./proxy/:/etc/nginx/conf.d/
+      - /opt/proxy/:/etc/nginx/conf.d/
       - /etc/letsencrypt:/etc/letsencrypt
       - /etc/ssl/certs/certbot/www:/var/www/certbot
     ports:

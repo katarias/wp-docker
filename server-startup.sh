@@ -13,4 +13,5 @@ docker build -f Dockerfile74 .
 docker build -f Dockerfile80 .
 docker build -f Dockerfile81 .
 docker build -f Dockerfile82 .
+docker build -f Dockerfile83 .
 docker pull mariadb:10.4

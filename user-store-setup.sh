@@ -66,12 +66,12 @@ if [ "$function" = "storesetup" ]
 then
 	User=$(echo $userdomain|tr '.' '_')
 	
-        if [ $phpversion != "74" ] && [ $phpversion != "80" ] && [ $phpversion != "81" ] && [ $phpversion !="82" ]
+        if [ $phpversion != 74 ] && [ $phpversion != 80 ] && [ $phpversion != 81 ] && [ $phpversion != 82 ] && [ $phpversion != 83 ]
         then
-                echo "Please pass php version number either 74/80/81/82"
+                echo "Please pass php version number either 74/80/81/82/83"
                 exit
         fi
-        
+
 	if [ -z $wpuser ] || [ -z $wppass ] || [ -z $wpemail ]
         then
                 echo "wpuser , wppass or wpemail should not be empty"
@@ -119,10 +119,8 @@ then
         docker exec -i --workdir /var/www/html ${User}_php wp --allow-root config create --dbname=$MYSQL_DATABASE --dbuser=$MYSQL_USER --dbpass=$MYSQL_PASSWORD --dbhost=${User}_mysql
 
         echo "WP Core install"
-        docker exec -i --workdir /var/www/html ${User}_php wp --allow-root core install --url=https://$userdomain --title="WP-CLI" --admin_user=$wpuser --admin_password=$wppass --admin_email=$wpemail
+        docker exec -i --workdir /var/www/html ${User}_php wp --allow-root core install --url=http://$userdomain --title="WP-CLI" --admin_user=$wpuser --admin_password=$wppass --admin_email=$wpemail
 
-	sed -i "2i \$_SERVER['HTTPS'] = 'on';" $PROJECT_DIR/$userdomain/web/wp-config.php
-	
         echo "Setup proper permission to subdomain folders"
         docker exec -i ${User}_nginx chown -R www-data:www-data /var/www/html
         docker exec -i ${User}_nginx chmod -R g+ws /var/www/html
@@ -131,13 +129,6 @@ then
 	
 ### Add new domain and assign free ssl ######
 	cd $SCRIPTDIR
-	cp proxy/sslconf $PROJECT_DIR/proxy/$userdomain.conf
-	sed -i "s/wp-store.com/$userdomain/g" $PROJECT_DIR/proxy/$userdomain.conf
-	sed -i "s/wp-store/$User/g" $PROJECT_DIR/proxy/$userdomain.conf
-
-	docker-compose restart
-	docker-compose run --rm --entrypoint "certbot certonly --non-interactive --webroot -w /var/www/certbot/ --email admin@$userdomain -d $userdomain --rsa-key-size 4096 --agree-tos --force-renewal" proxy_certbot
-
 	cp proxy/nginxconf $PROJECT_DIR/proxy/$userdomain.conf
 	sed -i "s/wp-store.com/$userdomain/g" $PROJECT_DIR/proxy/$userdomain.conf
 	sed -i "s/wp-store/$User/g" $PROJECT_DIR/proxy/$userdomain.conf

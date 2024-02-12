@@ -30,7 +30,7 @@ services:
       - wp-store_network
 
   wp-store_mysql:
-    image: mariadb:10.4
+    image: mariadb:latest
     container_name: wp-store_mysql
     restart: always
     environment: 
